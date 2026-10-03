@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "hair-booking-server",
   "version": "1.0.0",
   "description": "Backend API for the home-based hairstylist booking platform",
   "type": "module",
@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "seed": "node src/seed/seed.js"
+    "seed": "node src/seed/seed.js",
+    "test": "vitest run"
   },
   "engines": {
     "node": ">=18.11.0"
@@ -23,6 +24,8 @@
     "mongoose": "^9.10.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "mongodb-memory-server": "^11.3.0",
+    "nodemon": "^3.1.14",
+    "vitest": "^5.0.2"
   }
 }
