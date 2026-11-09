@@ -13,16 +13,10 @@ import { getBookedIntervals } from "./bookingConflict.service.js";
 
 const SLOT_INTERVAL_MINUTES = 30;
 
-/**
- * Merges overlapping/adjacent periods into continuous ranges, expressed as
- * integer minutes. Two back-to-back availability periods (e.g. 09:00-12:00
- * and 12:00-15:00) become one continuous 09:00-15:00 range, so an
- * appointment can validly span across where they meet (e.g. 11:30-12:30).
- */
 const mergePeriods = (periods) => {
   const sorted = periods
     .map((p) => ({ start: timeToMinutes(p.startTime), end: timeToMinutes(p.endTime) }))
-    .filter((p) => p.end > p.start) // defensive: ignore any malformed period
+    .filter((p) => p.end > p.start)
     .sort((a, b) => a.start - b.start);
 
   const merged = [];
@@ -38,24 +32,7 @@ const mergePeriods = (periods) => {
 };
 
 /**
- * Pure, DB-free slot calculation.
- *
- * Candidate start times always sit on the global 30-minute grid (:00/:30),
- * matching "appointment start times use 30-minute intervals" from the spec.
- * The service duration itself does not need to be a multiple of 30 — only
- * the *start* times are grid-aligned; the end time is whatever
- * start + duration works out to.
- *
- * The booked-interval overlap rule is [start, end): two intervals conflict
- * only if one starts before the other ends AND ends after the other starts.
- * This is what makes back-to-back appointments valid.
- *
- * @param {{
- *   availabilityPeriods: {startTime:string,endTime:string}[],
- *   durationMinutes: number,
- *   bookedIntervals?: {startTime:string,endTime:string}[]
- * }} params
- * @returns {{startTime:string,endTime:string}[]} slots sorted by start time
+ * Pure, DB-free slot calculation. Unchanged from Phase 3.
  */
 export const computeAvailableSlots = ({
   availabilityPeriods,
@@ -78,13 +55,12 @@ export const computeAvailableSlots = ({
   const slots = [];
 
   for (const period of mergedPeriods) {
-    // First 30-minute-grid point at or after the period's start.
     const firstCandidate =
       Math.ceil(period.start / SLOT_INTERVAL_MINUTES) * SLOT_INTERVAL_MINUTES;
 
     for (
       let candidateStart = firstCandidate;
-      candidateStart + durationMinutes <= period.end; // must fit ENTIRELY inside
+      candidateStart + durationMinutes <= period.end;
       candidateStart += SLOT_INTERVAL_MINUTES
     ) {
       const candidateEnd = candidateStart + durationMinutes;
@@ -101,15 +77,14 @@ export const computeAvailableSlots = ({
 };
 
 /**
- * DB-facing orchestrator: validates input, loads the service option,
- * verifies it's active and belongs to this business, loads availability
- * and (later) bookings for the date, and delegates the actual math to
- * computeAvailableSlots.
+ * DB-facing orchestrator. `session`, if provided, is used for every query so
+ * this can run inside a MongoDB transaction during booking creation — that's
+ * what makes `POST /bookings`'s final check consistent with `GET /slots`.
  *
- * @param {{ businessId: string, date: string, serviceOptionId: string }} params
+ * @param {{ businessId: string, date: string, serviceOptionId: string, session?: import("mongoose").ClientSession }} params
  * @returns {Promise<{startTime:string,endTime:string}[]>}
  */
-export const getAvailableSlots = async ({ businessId, date, serviceOptionId }) => {
+export const getAvailableSlots = async ({ businessId, date, serviceOptionId, session }) => {
   if (!businessId) throw new AppError("businessId is required", 400);
   if (!serviceOptionId) throw new AppError("serviceOptionId is required", 400);
   if (!isValidDateString(date)) {
@@ -119,11 +94,11 @@ export const getAvailableSlots = async ({ businessId, date, serviceOptionId }) =
     throw new AppError("date must not be in the past", 400);
   }
 
-  const serviceOption = await ServiceOption.findById(serviceOptionId);
+  const serviceOption = await ServiceOption.findById(serviceOptionId).session(session || null);
   if (!serviceOption) throw new AppError("Service option not found", 404);
   if (!serviceOption.active) throw new AppError("Service option is not active", 400);
 
-  const service = await Service.findById(serviceOption.serviceId);
+  const service = await Service.findById(serviceOption.serviceId).session(session || null);
   if (!service || service.businessId.toString() !== businessId.toString()) {
     throw new AppError("Service option does not belong to this business", 400);
   }
@@ -132,9 +107,11 @@ export const getAvailableSlots = async ({ businessId, date, serviceOptionId }) =
     businessId,
     date,
     status: "available",
-  }).lean();
+  })
+    .session(session || null)
+    .lean();
 
-  const bookedIntervals = await getBookedIntervals({ businessId, date });
+  const bookedIntervals = await getBookedIntervals({ businessId, date, session });
 
   return computeAvailableSlots({
     availabilityPeriods,
