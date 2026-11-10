@@ -18,3 +18,29 @@ export const getBookedIntervals = async ({ businessId, date, session }) => {
 
   return bookings.map((b) => ({ startTime: b.startTime, endTime: b.endTime }));
 };
+
+/**
+ * Same blocking rule, but for a date range in a single query.
+ * Used by the bookable-dates endpoint to avoid one query per day.
+ *
+ * @returns {Promise<Record<string, {startTime:string,endTime:string}[]>>} keyed by "YYYY-MM-DD"
+ */
+export const getBookedIntervalsForRange = async ({ businessId, startDate, endDate }) => {
+  const bookings = await Booking.find(
+    {
+      businessId,
+      date: { $gte: startDate, $lte: endDate },
+      status: { $in: BLOCKING_STATUSES },
+    },
+    "date startTime endTime"
+  ).lean();
+
+  const byDate = {};
+  for (const booking of bookings) {
+    (byDate[booking.date] ||= []).push({
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+    });
+  }
+  return byDate;
+};

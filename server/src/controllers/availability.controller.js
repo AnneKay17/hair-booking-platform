@@ -5,6 +5,7 @@ import { AppError } from "../utils/AppError.js";
 import { getAvailableSlots } from "../services/slotService.js";
 import { isValidDateString } from "../utils/timeUtils.js";
 import { getDefaultBusiness } from "../services/business.service.js";
+import { getBookableDates } from "../services/bookableDates.service.js";
 
 /**
  * GET /api/availability?date=2026-10-03
@@ -117,4 +118,22 @@ export const getSlots = asyncHandler(async (req, res) => {
   const slots = await getAvailableSlots({ businessId, date, serviceOptionId });
 
   res.status(200).json({ success: true, data: slots });
+});
+
+/**
+ * GET /api/availability/dates?serviceOptionId=...&startDate=...&endDate=...
+ * Customer-facing: dates in the range that have at least one bookable slot.
+ */
+export const getDates = asyncHandler(async (req, res) => {
+  const { serviceOptionId, startDate, endDate } = req.query;
+  let { businessId } = req.query;
+
+  if (!businessId) {
+    const business = await getDefaultBusiness();
+    businessId = business._id;
+  }
+
+  const dates = await getBookableDates({ businessId, serviceOptionId, startDate, endDate });
+
+  res.status(200).json({ success: true, data: dates });
 });

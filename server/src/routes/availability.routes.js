@@ -6,14 +6,16 @@ import {
   updateAvailability,
   deleteAvailability,
   getSlots,
+  getDates,
 } from "../controllers/availability.controller.js";
 
 const router = Router();
 
 // Customer-facing
 router.get("/slots", getSlots);
+router.get("/dates", getDates);
 
-// Admin — NOT authenticated yet, auth added in a later phase
+// Admin: NOT authenticated yet, auth added in a later phase
 router.get("/", getAvailability);
 router.post("/", createAvailability);
 router.patch("/:id", updateAvailability);
