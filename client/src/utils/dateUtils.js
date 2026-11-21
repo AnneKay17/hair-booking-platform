@@ -71,3 +71,14 @@ export const getMonthRange = (year, month, today) => {
     endDate: toDateString(year, month, daysInMonth),
   };
 };
+
+/** "2026-10-20" -> e.g. "Tue 20 Oct" (formatted in UTC: no day shift). */
+export const formatDateShort = (dateString) => {
+  const { year, month, day } = parseDateString(dateString);
+  return new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+};
