@@ -1,4 +1,3 @@
-//A priced, timed variation of a service (e.g. Braids → Short/Medium/Long).
 import mongoose from "mongoose";
 
 const serviceOptionSchema = new mongoose.Schema(
@@ -18,6 +17,10 @@ const serviceOptionSchema = new mongoose.Schema(
       type: Number,
       required: [true, "durationMinutes is required"],
       min: [1, "durationMinutes must be greater than 0"],
+      validate: {
+        validator: Number.isInteger,
+        message: "durationMinutes must be a whole number of minutes",
+      },
     },
     active: { type: Boolean, default: true },
   },

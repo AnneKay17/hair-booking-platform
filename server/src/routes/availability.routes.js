@@ -1,24 +1,10 @@
-//Routes for availability management and slot retrieval.
 import { Router } from "express";
-import {
-  getAvailability,
-  createAvailability,
-  updateAvailability,
-  deleteAvailability,
-  getSlots,
-  getDates,
-} from "../controllers/availability.controller.js";
+import { getSlots, getDates } from "../controllers/availability.controller.js";
 
 const router = Router();
 
-// Customer-facing
+// Public, read-only. Availability management lives under /api/admin.
 router.get("/slots", getSlots);
 router.get("/dates", getDates);
-
-// Admin: NOT authenticated yet, auth added in a later phase
-router.get("/", getAvailability);
-router.post("/", createAvailability);
-router.patch("/:id", updateAvailability);
-router.delete("/:id", deleteAvailability);
 
 export default router;

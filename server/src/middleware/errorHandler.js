@@ -4,18 +4,22 @@ import { isProduction } from "../config/env.js";
 const normalizeError = (error) => {
   if (error instanceof AppError) return error;
 
-  // Mongoose schema validation failure (missing/invalid fields)
+  if (error.type === "entity.parse.failed") {
+    return new AppError("Request body is not valid JSON", 400);
+  }
+  if (error.type === "entity.too.large") {
+    return new AppError("Request body is too large", 413);
+  }
+
   if (error.name === "ValidationError") {
     const messages = Object.values(error.errors).map((e) => e.message);
     return new AppError(messages.join("; "), 400);
   }
 
-  // Malformed ObjectId in a route param (e.g. /api/services/not-an-id)
   if (error.name === "CastError") {
     return new AppError(`Invalid ${error.path}: ${error.value}`, 400);
   }
 
-  // Duplicate key on a unique index
   if (error.code === 11000) {
     return new AppError("Duplicate value violates a unique constraint", 409);
   }

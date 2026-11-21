@@ -45,6 +45,7 @@ export const getBookableDates = async ({ businessId, serviceOptionId, startDate,
   if (!service || service.businessId.toString() !== businessId.toString()) {
     throw new AppError("Service option does not belong to this business", 400);
   }
+  if (!service.active) throw new AppError("Service is not active", 400);
 
   const today = getTodayDateString();
   const effectiveStart = startDate < today ? today : startDate;

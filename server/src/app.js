@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import routes from "./routes/index.js";
 import { notFound } from "./middleware/notFound.js";
@@ -8,15 +9,16 @@ import { env } from "./config/env.js";
 
 const app = express();
 
-// Core middleware
+app.disable("x-powered-by");
+if (env.trustProxy > 0) app.set("trust proxy", env.trustProxy);
+
 app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// API routes
 app.use("/api", routes);
 
-// Unmatched routes and errors (must stay last, in this order)
 app.use(notFound);
 app.use(errorHandler);
 

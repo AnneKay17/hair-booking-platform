@@ -2,7 +2,7 @@ import Booking from "../models/Booking.js";
 
 // Only these statuses occupy a slot. Rejected/Cancelled bookings free it up;
 // Completed bookings are historical and refer to a date that has passed.
-const BLOCKING_STATUSES = ["Pending", "Confirmed"];
+export const BLOCKING_STATUSES = ["Pending", "Confirmed"];
 
 /**
  * @param {{ businessId: string, date: string, session?: import("mongoose").ClientSession }} params

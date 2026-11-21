@@ -13,7 +13,7 @@ import { getBookedIntervals } from "./bookingConflict.service.js";
 
 const SLOT_INTERVAL_MINUTES = 30;
 
-const mergePeriods = (periods) => {
+export const mergePeriods = (periods) => {
   const sorted = periods
     .map((p) => ({ start: timeToMinutes(p.startTime), end: timeToMinutes(p.endTime) }))
     .filter((p) => p.end > p.start)
@@ -102,6 +102,7 @@ export const getAvailableSlots = async ({ businessId, date, serviceOptionId, ses
   if (!service || service.businessId.toString() !== businessId.toString()) {
     throw new AppError("Service option does not belong to this business", 400);
   }
+  if (!service.active) throw new AppError("Service is not active", 400);
 
   const availabilityPeriods = await Availability.find({
     businessId,
